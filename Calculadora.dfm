@@ -10,14 +10,14 @@ object frmCalculadora: TfrmCalculadora
   Font.Height = -13
   Font.Name = 'Segoe UI'
   Font.Style = []
-  Position = poScreenCenter
   KeyPreview = True
+  Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
   OnKeyPress = FormKeyPress
-  OnShow = FormShow
   OnResize = FormResize
+  OnShow = FormShow
   TextHeight = 17
   object pnlDisplay: TPanel
     Left = 0
@@ -26,7 +26,6 @@ object frmCalculadora: TfrmCalculadora
     Height = 120
     Align = alTop
     BevelOuter = bvNone
-    Caption = ''
     TabOrder = 0
     object lblExpression: TLabel
       Left = 12
@@ -35,7 +34,6 @@ object frmCalculadora: TfrmCalculadora
       Height = 17
       Alignment = taRightJustify
       AutoSize = False
-      Caption = ''
     end
     object lblDisplay: TLabel
       Left = 12
@@ -50,7 +48,7 @@ object frmCalculadora: TfrmCalculadora
     object lblAngleMode: TLabel
       Left = 12
       Top = 88
-      Width = 200
+      Width = 82
       Height = 17
       Caption = 'Angulo: Graus'
     end
@@ -71,7 +69,6 @@ object frmCalculadora: TfrmCalculadora
     Height = 560
     Align = alClient
     BevelOuter = bvNone
-    Caption = ''
     TabOrder = 1
   end
 end

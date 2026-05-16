@@ -1,4 +1,4 @@
-unit Calculadora;
+﻿unit Calculadora;
 
 {
   ---------------------------------------------------------------------------
@@ -39,6 +39,7 @@ uses
   Winapi.Messages,
   System.SysUtils,
   System.Classes,
+  System.Generics.Collections,
   Vcl.Graphics,
   Vcl.Controls,
   Vcl.Forms,
@@ -68,12 +69,21 @@ type
   private
     FController: TCalcController;
     FKeypadBuilt: Boolean;
+    {
+      FCommandMap
+      - TDictionary<chave, valor>: estrutura genérica que associa texto (comando do botão)
+        a uma rotina sem parâmetros (TProc = "reference to procedure").
+      - Evita uma longa cadeia if/else na DispatchCommand.
+    }
+    FCommandMap: TDictionary<string, TProc>;
 
     procedure ApplyTheme;
     procedure EnsureKeypadBuilt;
     procedure BuildKeypad;
     procedure OnCalcButton(Sender: TObject);
     procedure DispatchCommand(const ACmd: string);
+    procedure InitCommandMap;
+    procedure RegisterCommand(const ACmd: string; const AAction: TProc);
   public
     {
       ICalcViewPort — estes métodos têm de estar em "public" (regra do Delphi):
@@ -193,6 +203,7 @@ begin
   }
   FController := TCalcController.Create(Self);
   FKeypadBuilt := False;
+  InitCommandMap;
   { KeyPreview: o formulário recebe teclas antes do controlo focado (ex.: botão). }
   KeyPreview := True;
   ApplyTheme;
@@ -207,8 +218,9 @@ procedure TfrmCalculadora.FormDestroy(Sender: TObject);
 begin
   {
     FormDestroy
-    - Liberta o Controller (que por sua vez liberta o Model).
+    - Liberta o mapa de comandos e o Controller (que por sua vez liberta o Model).
   }
+  FCommandMap.Free;
   FController.Free;
 end;
 
@@ -503,14 +515,74 @@ begin
   DispatchCommand(Cmd);
 end;
 
+procedure TfrmCalculadora.RegisterCommand(const ACmd: string; const AAction: TProc);
+begin
+  {
+    RegisterCommand
+    - Função auxiliar: uma vez só escrevemos FCommandMap.Add(...).
+    - O segundo parâmetro é TProc (reference to procedure), típico para delegates em Delphi.
+  }
+  FCommandMap.Add(ACmd, AAction);
+end;
+
+procedure TfrmCalculadora.InitCommandMap;
+begin
+  {
+    InitCommandMap
+    - Preenche o dicionário uma vez: cada tecla lógica (ex.: 'SIN') aponta para
+      uma rotina anónima que delega no FController.
+  }
+  FCommandMap := TDictionary<string, TProc>.Create;
+  RegisterCommand('DEC', procedure begin FController.ActionDecimal end);
+  RegisterCommand('BS', procedure begin FController.ActionBackspace end);
+  RegisterCommand('SIGN', procedure begin FController.ActionToggleSign end);
+  RegisterCommand('CA', procedure begin FController.ActionClearAll end);
+  RegisterCommand('CE', procedure begin FController.ActionClearEntry end);
+  RegisterCommand('ADD', procedure begin FController.ActionAdd end);
+  RegisterCommand('SUB', procedure begin FController.ActionSubtract end);
+  RegisterCommand('MUL', procedure begin FController.ActionMultiply end);
+  RegisterCommand('DIV', procedure begin FController.ActionDivide end);
+  RegisterCommand('MOD', procedure begin FController.ActionMod end);
+  RegisterCommand('EQ', procedure begin FController.ActionEquals end);
+  RegisterCommand('PCT', procedure begin FController.ActionPercent end);
+  RegisterCommand('POW', procedure begin FController.ActionPower end);
+  RegisterCommand('SIN', procedure begin FController.ActionSin end);
+  RegisterCommand('COS', procedure begin FController.ActionCos end);
+  RegisterCommand('TAN', procedure begin FController.ActionTan end);
+  RegisterCommand('ASIN', procedure begin FController.ActionASin end);
+  RegisterCommand('ACOS', procedure begin FController.ActionACos end);
+  RegisterCommand('ATAN', procedure begin FController.ActionATan end);
+  RegisterCommand('LN', procedure begin FController.ActionLn end);
+  RegisterCommand('LOG', procedure begin FController.ActionLog10 end);
+  RegisterCommand('SQRT', procedure begin FController.ActionSqrt end);
+  RegisterCommand('SQR', procedure begin FController.ActionSquare end);
+  RegisterCommand('INV', procedure begin FController.ActionInverse end);
+  RegisterCommand('ABS', procedure begin FController.ActionAbs end);
+  RegisterCommand('EXP', procedure begin FController.ActionExp end);
+  RegisterCommand('INT', procedure begin FController.ActionInt end);
+  RegisterCommand('FRAC', procedure begin FController.ActionFrac end);
+  RegisterCommand('FAC', procedure begin FController.ActionFactorial end);
+  RegisterCommand('PI', procedure begin FController.ActionPi end);
+  RegisterCommand('EE', procedure begin FController.ActionE end);
+  RegisterCommand('MEMC', procedure begin FController.ActionMemoryClear end);
+  RegisterCommand('MEMR', procedure begin FController.ActionMemoryRecall end);
+  RegisterCommand('MEMS', procedure begin FController.ActionMemoryStore end);
+  RegisterCommand('MEMA', procedure begin FController.ActionMemoryAdd end);
+  RegisterCommand('MEMK', procedure begin FController.ActionMemorySubtract end);
+  RegisterCommand('DEG', procedure begin FController.ActionAngleDegrees end);
+  RegisterCommand('RAD', procedure begin FController.ActionAngleRadians end);
+end;
+
 procedure TfrmCalculadora.DispatchCommand(const ACmd: string);
+var
+  AAction: TProc;
 begin
   if not Assigned(FController) then
     Exit;
   {
     DispatchCommand
-    - "Tabela de encaminhamento": transforma texto do botão em chamada ao Controller.
-    - Mantém a View fina: não contém fórmulas matemáticas.
+    - Dígitos D0..D9 mantêm tratamento explícito (padrão curto).
+    - Demais comandos: procura O(1) no TDictionary e executa a rotina associada.
   }
   if ACmd = '' then
     Exit;
@@ -521,82 +593,8 @@ begin
     Exit;
   end;
 
-  if ACmd = 'DEC' then
-    FController.ActionDecimal
-  else if ACmd = 'BS' then
-    FController.ActionBackspace
-  else if ACmd = 'SIGN' then
-    FController.ActionToggleSign
-  else if ACmd = 'CA' then
-    FController.ActionClearAll
-  else if ACmd = 'CE' then
-    FController.ActionClearEntry
-  else if ACmd = 'ADD' then
-    FController.ActionAdd
-  else if ACmd = 'SUB' then
-    FController.ActionSubtract
-  else if ACmd = 'MUL' then
-    FController.ActionMultiply
-  else if ACmd = 'DIV' then
-    FController.ActionDivide
-  else if ACmd = 'MOD' then
-    FController.ActionMod
-  else if ACmd = 'EQ' then
-    FController.ActionEquals
-  else if ACmd = 'PCT' then
-    FController.ActionPercent
-  else if ACmd = 'POW' then
-    FController.ActionPower
-  else if ACmd = 'SIN' then
-    FController.ActionSin
-  else if ACmd = 'COS' then
-    FController.ActionCos
-  else if ACmd = 'TAN' then
-    FController.ActionTan
-  else if ACmd = 'ASIN' then
-    FController.ActionASin
-  else if ACmd = 'ACOS' then
-    FController.ActionACos
-  else if ACmd = 'ATAN' then
-    FController.ActionATan
-  else if ACmd = 'LN' then
-    FController.ActionLn
-  else if ACmd = 'LOG' then
-    FController.ActionLog10
-  else if ACmd = 'SQRT' then
-    FController.ActionSqrt
-  else if ACmd = 'SQR' then
-    FController.ActionSquare
-  else if ACmd = 'INV' then
-    FController.ActionInverse
-  else if ACmd = 'ABS' then
-    FController.ActionAbs
-  else if ACmd = 'EXP' then
-    FController.ActionExp
-  else if ACmd = 'INT' then
-    FController.ActionInt
-  else if ACmd = 'FRAC' then
-    FController.ActionFrac
-  else if ACmd = 'FAC' then
-    FController.ActionFactorial
-  else if ACmd = 'PI' then
-    FController.ActionPi
-  else if ACmd = 'EE' then
-    FController.ActionE
-  else if ACmd = 'MEMC' then
-    FController.ActionMemoryClear
-  else if ACmd = 'MEMR' then
-    FController.ActionMemoryRecall
-  else if ACmd = 'MEMS' then
-    FController.ActionMemoryStore
-  else if ACmd = 'MEMA' then
-    FController.ActionMemoryAdd
-  else if ACmd = 'MEMK' then
-    FController.ActionMemorySubtract
-  else if ACmd = 'DEG' then
-    FController.ActionAngleDegrees
-  else if ACmd = 'RAD' then
-    FController.ActionAngleRadians;
+  if FCommandMap.TryGetValue(ACmd, AAction) then
+    AAction();
 end;
 
 procedure TfrmCalculadora.SetMainDisplay(const AText: string);
