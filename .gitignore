@@ -1,0 +1,41 @@
+# RAD Studio / Delphi — artefactos de compilação
+*.dcu
+*.dcp
+*.exe
+*.dll
+*.bpl
+*.apk
+*.dex
+*.rsm
+*.map
+*.drc
+*.o
+*.so
+*.a
+
+# Pastas de saída típicas
+Win32/
+Win64/
+Linux64/
+OSX32/
+Android/
+iOSDevice*/
+__recovery/
+__history/
+
+# Ficheiros locais / cache do IDE
+*.local
+*.identcache
+*.projdata
+*.stat
+*.tvsconfig
+.tvsconfig
+*.dsk
+
+# Depuração / mapas
+*.tds
+
+# Sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
